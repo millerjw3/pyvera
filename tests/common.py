@@ -224,7 +224,7 @@ def handle_lu_action(payload: dict, api_data: VeraApiData) -> ResponsesResponse:
 
     device = get_device(device_id, api_data) or {}
     status = get_device_status(device_id, api_data) or {}
-    status["states"] = []
+    status["states"] = status.get("states") or []
 
     # Update the device and status objects.
     if status_variable_name is not None:
@@ -280,7 +280,14 @@ def handle_request(
     if payload_id == "sdata":
         response = 200, {}, json.dumps(api_data.sdata)
     if payload_id == "status":
-        response = 200, {}, json.dumps(api_data.status)
+        device_num = payload.get("DeviceNum")
+        if device_num is None:
+            response = 200, {}, json.dumps(api_data.status)
+        else:
+            # A real Vera answers a single-device status request with the
+            # device keyed as "Device_Num_<id>".
+            device_status = get_device_status(int(device_num), api_data) or {}
+            response = 200, {}, json.dumps({f"Device_Num_{device_num}": device_status})
     if payload_id == "lu_sdata":
         response = 200, {}, json.dumps(api_data.lu_sdata)
     if payload_id == "action":
@@ -844,7 +851,23 @@ RESPONSE_STATUS: dict = {
         },
         {
             "id": DEVICE_THERMOSTAT2_ID,
-            "states": [],
+            "states": [
+                {
+                    "service": "urn:upnp-org:serviceId:TemperatureSetpoint1",
+                    "variable": "CurrentSetpoint",
+                    "value": "21.75",
+                },
+                {
+                    "service": "urn:upnp-org:serviceId:TemperatureSetpoint1_Heat",
+                    "variable": "CurrentSetpoint",
+                    "value": "19.50",
+                },
+                {
+                    "service": "urn:upnp-org:serviceId:TemperatureSetpoint1_Cool",
+                    "variable": "CurrentSetpoint",
+                    "value": "24.00",
+                },
+            ],
             "Jobs": [],
             "PendingJobs": 0,
             "tooltip": {"display": 0},
