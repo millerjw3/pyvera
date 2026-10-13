@@ -1418,6 +1418,29 @@ class VeraThermostat(VeraDevice):
         """Set the cooling setpoint (TemperatureSetpoint1_Cool)."""
         self._set_setpoint(self.thermostat_cool_setpoint, temp)
 
+    def get_energy_mode(self, refresh: bool = False) -> Optional[str]:
+        """Get the energy mode (EnergyModeStatus).
+
+        Typically "Normal" or "EnergySavingsMode". While in energy savings
+        mode, get_hvac_mode reports the economy variant of the mode, e.g.
+        "EconomyHeatOn".
+        """
+        if refresh:
+            self.refresh_states()
+        return cast(
+            Optional[str],
+            self.get_service_value(
+                self.thermostat_operating_service[0], "EnergyModeStatus"
+            ),
+        )
+
+    def set_energy_mode(self, mode: str) -> None:
+        """Set the energy mode, e.g. "Normal" or "EnergySavingsMode"."""
+        service_id = self.thermostat_operating_service[0]
+        self.set_service_value(service_id, "EnergyModeTarget", "NewModeTarget", mode)
+        self.set_cache_service_value(service_id, "EnergyModeTarget", mode)
+        self.set_cache_service_value(service_id, "EnergyModeStatus", mode)
+
     def _has_double_setpoints(self) -> bool:
         """Determines if a thermostate has two setpoints"""
         if self.get_value("setpoint"):

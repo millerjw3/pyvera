@@ -386,6 +386,41 @@ def test_thermostat_without_setpoint_variables(
     assert device.get_heat_setpoint() == 18.0
 
 
+def test_thermostat_energy_mode(vera_controller_data: VeraControllerData) -> None:
+    """Test reading and writing the energy mode."""
+    controller = vera_controller_data.controller
+    device = cast(VeraThermostat, controller.get_device_by_id(DEVICE_THERMOSTAT2_ID))
+
+    assert device.get_energy_mode() == "Normal"
+    assert device.get_energy_mode(refresh=True) == "Normal"
+
+    device.set_energy_mode("EnergySavingsMode")
+    assert device.get_energy_mode() == "EnergySavingsMode"
+    assert device.get_energy_mode(refresh=True) == "EnergySavingsMode"
+    assert (
+        device.get_service_value(
+            device.thermostat_operating_service[0], "EnergyModeTarget"
+        )
+        == "EnergySavingsMode"
+    )
+
+    device.set_energy_mode("Normal")
+    assert device.get_energy_mode(refresh=True) == "Normal"
+
+    # The heat/cool setpoints are separate variables and are left alone.
+    assert device.get_heat_setpoint() == 19.5
+
+
+def test_thermostat_without_energy_mode(
+    vera_controller_data: VeraControllerData,
+) -> None:
+    """Test a thermostat that does not report an energy mode."""
+    controller = vera_controller_data.controller
+    device = cast(VeraThermostat, controller.get_device_by_id(DEVICE_THERMOSTAT_ID))
+
+    assert device.get_energy_mode(refresh=True) is None
+
+
 def test_refresh_states_keeps_cache_on_unexpected_response(
     vera_controller_data: VeraControllerData,
 ) -> None:
